@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕷️ SPIDER TRAINING SYSTEM</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #111118;
+            --border: #1a1a2e;
+            --text: #c8c8d4;
+            --text-bright: #e8e8f0;
+            --accent: #7b2fff;
+            --accent-glow: #9b4fff;
+            --neon-blue: #00d4ff;
+            --neon-pink: #ff2d78;
+            --danger: #ff3860;
+            --success: #23d160;
+            --warning: #ffdd57;
+            --grid-color: rgba(123, 47, 255, 0.08);
+            --scanline: rgba(0, 212, 255, 0.03);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', 'Source Code Pro', 'Consolas', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: crosshair;
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* 背景城市天際線 */
+        .cityscape {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+            background:
+                linear-gradient(to top, rgba(123, 47, 255, 0.1) 0%, transparent 100%),
+                repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    var(--scanline) 2px,
+                    var(--scanline) 4px);
+        }
+        .cityscape::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                /* 建築物剪影 */
+                linear-gradient(180deg, transparent 20%, #0d0d1a 20%) 0 0 / 30px 100%,
+                linear-gradient(180deg, transparent 35%, #0d0d1a 35%) 40px 0 / 25px 100%,
+                linear-gradient(180deg, transparent 15%, #0d0d1a 15%) 80px 0 / 35px 100%,
+                linear-gradient(180deg, transparent 40%, #0d0d1a 40%) 130px 0 / 20px 100%,
+                linear-gradient(180deg, transparent 25%, #0d0d1a 25%) 170px 0 / 40px 100%,
+                linear-gradient(180deg, transparent 30%, #0d0d1a 30%) 230px 0 / 28px 100%,
+                linear-gradient(180deg, transparent 18%, #0d0d1a 18%) 280px 0 / 32px 100%,
+                linear-gradient(180deg, transparent 38%, #0d0d1a 38%) 330px 0 / 22px 100%,
+                linear-gradient(180deg, transparent 22%, #0d0d1a 22%) 370px 0 / 38px 100%,
+                linear-gradient(180deg, transparent 28%, #0d0d1a 28%) 430px 0 / 26px 100%;
+            background-repeat: repeat-x;
+            background-position: bottom;
+            background-size: 500px 100%;
+            animation: cityScroll 60s linear infinite;
+        }
+        @keyframes cityScroll {
+            from {
+                background-position: 0 bottom;
+            }
+            to {
+                background-position: -500px bottom;
+            }
+        }
+
+        /* 粒子系統 */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .particle {
+            position: absolute;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+            opacity: 0;
+        }
+        @keyframes floatUp {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) scale(0);
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-10vh) scale(1.5);
+            }
+        }
+
+        /* 主容器 */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* 標題 */
+        .title-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .title-main {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: bold;
+            color: var(--text-bright);
+            letter-spacing: 3px;
+            text-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent);
+            animation: titlePulse 3s ease-in-out infinite;
+            position: relative;
+            display: inline-block;
+        }
+        @keyframes titlePulse {
+            0%,
+            100% {
+                text-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent);
+            }
+            50% {
+                text-shadow: 0 0 50px var(--accent-glow), 0 0 100px var(--accent), 0 0 150px var(--neon-blue);
+            }
+        }
+        .title-sub {
+            font-size: 0.85rem;
+            color: var(--neon-blue);
+            letter-spacing: 5px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        .spider-icon {
+            font-size: 3rem;
+            display: block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        /* 卡片 */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+            transition: left 0.6s ease;
+        }
+        .card:hover::before {
+            left: 100%;
+        }
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 35px rgba(123, 47, 255, 0.3);
+            transform: translateY(-2px);
+            background: #151520;
+        }
+        .card:active {
+            transform: scale(0.98);
+            transition: transform 0.1s ease;
+        }
+        .card.selected {
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 30px rgba(123, 47, 255, 0.5), inset 0 0 30px rgba(123, 47, 255, 0.05);
+            background: #1a1a2e;
+            animation: selectedGlow 1.5s ease-in-out infinite;
+        }
+        @keyframes selectedGlow {
+            0%,
+            100% {
+                box-shadow: 0 0 30px rgba(123, 47, 255, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 50px rgba(155, 79, 255, 0.8);
+            }
+        }
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-bright);
+            letter-spacing: 1px;
+        }
+        .card-desc {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* 按鈕 */
+        .btn {
+            display: inline-block;
+            padding: 14px 35px;
+            font-size: 1rem;
+            font-family: inherit;
+            letter-spacing: 2px;
+            border: 2px solid var(--accent);
+            background: transparent;
+            color: var(--accent-glow);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 40px rgba(123, 47, 255, 0.6);
+            text-shadow: 0 0 10px #fff;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+        .btn-large {
+            font-size: 1.2rem;
+            padding: 18px 50px;
+            letter-spacing: 4px;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 25px rgba(123, 47, 255, 0.4);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 50px rgba(155, 79, 255, 0.8);
+        }
+
+        /* 網格系統 */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        /* 時間選擇器 */
+        .time-slider-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .time-chip {
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            color: #999;
+            background: transparent;
+            font-family: inherit;
+        }
+        .time-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent-glow);
+        }
+        .time-chip.selected {
+            border-color: var(--accent-glow);
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(123, 47, 255, 0.5);
+            font-weight: bold;
+        }
+
+        /* 確認頁 */
+        .config-display {
+            background: #0a0a14;
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: inset 0 0 30px rgba(123, 47, 255, 0.08);
+        }
+        .config-line {
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            margin: 8px 0;
+            color: var(--neon-blue);
+        }
+        .config-line span {
+            color: var(--accent-glow);
+            font-weight: bold;
+        }
+        .config-divider {
+            border: none;
+            border-top: 1px dashed var(--border);
+            margin: 15px 0;
+        }
+
+        /* 進度指示器 */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--neon-blue));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* 課表輸出 */
+        .plan-output {
+            background: #0a0a14;
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 40px rgba(123, 47, 255, 0.2);
+        }
+        .plan-header {
+            text-align: center;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .plan-title {
+            font-size: 1.3rem;
+            color: var(--accent-glow);
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px var(--accent);
+        }
+        .plan-meta {
+            font-size: 0.75rem;
+            color: var(--neon-blue);
+            letter-spacing: 2px;
+        }
+        .exercise-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 6px 0;
+            border-radius: 8px;
+            background: rgba(123, 47, 255, 0.05);
+            border-left: 3px solid var(--accent);
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+        .exercise-item:hover {
+            background: rgba(123, 47, 255, 0.12);
+            border-left-color: var(--neon-blue);
+        }
+        .exercise-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+        .exercise-name {
+            flex: 1;
+            font-weight: bold;
+            color: #ddd;
+            letter-spacing: 1px;
+        }
+        .exercise-sets {
+            color: var(--neon-blue);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        .section-label {
+            color: var(--accent-glow);
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            margin: 15px 0 8px;
+            padding-left: 5px;
+            border-bottom: 1px solid rgba(123, 47, 255, 0.2);
+            padding-bottom: 5px;
+        }
+
+        /* 掃描線效果 */
+        .scanline-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.04;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.5) 2px,
+                    rgba(0, 0, 0, 0.5) 4px);
+        }
+
+        /* 蜘蛛人動畫區域 */
+        .spider-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 100;
+            pointer-events: none;
+            transition: all 0.5s ease;
+        }
+        .spider-sprite {
+            font-size: 4rem;
+            filter: drop-shadow(0 0 15px rgba(255, 45, 120, 0.6));
+            animation: spiderIdle 3s ease-in-out infinite;
+            display: inline-block;
+        }
+        @keyframes spiderIdle {
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-8px) rotate(-3deg);
+            }
+            75% {
+                transform: translateY(-4px) rotate(3deg);
+            }
+        }
+        .spider-sprite.jump {
+            animation: spiderJump 0.6s ease-out;
+        }
+        @keyframes spiderJump {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-60px) scale(1.2);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+            }
+        }
+        .spider-sprite.swing {
+            animation: spiderSwing 0.8s ease-in-out;
+        }
+        @keyframes spiderSwing {
+            0% {
+                transform: translateX(0) rotate(0deg);
+            }
+            25% {
+                transform: translateX(-50px) rotate(-15deg);
+            }
+            75% {
+                transform: translateX(50px) rotate(15deg);
+            }
+            100% {
+                transform: translateX(0) rotate(0deg);
+            }
+        }
+
+        /* 響應式 */
+        @media (max-width: 600px) {
+            .grid-2,
+            .grid-3,
+            .grid-4,
+            .grid-5 {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .time-slider-group {
+                gap: 5px;
+            }
+            .time-chip {
+                padding: 8px 12px;
+                font-size: 0.7rem;
+            }
+            .card {
+                padding: 15px;
+            }
+            .card-icon {
+                font-size: 1.5rem;
+            }
+            .card-title {
+                font-size: 0.9rem;
+            }
+            .spider-sprite {
+                font-size: 2.5rem;
+            }
+            .spider-container {
+                bottom: 15px;
+                right: 15px;
+            }
+            .main-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 掃描線 -->
+    <div class="scanline-overlay"></div>
+
+    <!-- 城市背景 -->
+    <div class="cityscape"></div>
+
+    <!-- 粒子容器 -->
+    <div class="particles-container" id="particlesContainer"></div>
+
+    <!-- 蜘蛛人 -->
+    <div class="spider-container" id="spiderContainer">
+        <span class="spider-sprite" id="spiderSprite">🕷️</span>
+    </div>
+
+    <!-- 主內容 -->
+    <div class="main-container" id="appContainer">
+        <!-- JS 動態渲染 -->
+    </div>
+
+    <!-- 音效系統 (Web Audio API) -->
+    <script>
+        // ==================== 音效引擎 ====================
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.initialized = false;
+            }
+            init() {
+                if (this.initialized) return;
+                try {
+                    this.ctx = new(window.AudioContext || window.webkitAudioContext)();
+                    this.initialized = true;
+                } catch (e) {
+                    console.warn('Web Audio API 無法使用');
+                }
+            }
+            play(freq, type, duration, vol = 0.08) {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) { /* silent */ }
+            }
+            click() { this.play(800, 'square', 0.08, 0.06); }
+            select() { this.play(600, 'square', 0.1, 0.08);
+                this.play(900, 'square', 0.08, 0.06); }
+            confirm() { this.play(400, 'triangle', 0.15, 0.1);
+                this.play(600, 'triangle', 0.12, 0.08);
+                this.play(1000, 'triangle', 0.1, 0.12); }
+            scan() { this.play(200, 'sawtooth', 0.3, 0.05);
+                this.play(300, 'sawtooth', 0.25, 0.04);
+                this.play(500, 'sawtooth', 0.2, 0.06); }
+            complete() {
+                [400, 600, 800, 1000].forEach((f, i) => {
+                    setTimeout(() => this.play(f, 'triangle', 0.2, 0.1), i * 80);
+                });
+            }
+        }
+        const sound = new SoundEngine();
+    </script>
+
+    <script>
+        // ==================== 動作資料庫 ====================
+        const exerciseDB = {
+            chest: {
+                main: [
+                    { name: '槓鈴臥推', sets: '4', reps: '6-10', angle: '水平推', equip: 'gym' },
+                    { name: '啞鈴平板臥推', sets: '3-4', reps: '8-12', angle: '水平推', equip: 'dumbbell' },
+                    { name: '上斜槓鈴臥推', sets: '3-4', reps: '8-10', angle: '上斜推', equip: 'gym' },
+                    { name: '上斜啞鈴臥推', sets: '3-4', reps: '8-12', angle: '上斜推', equip: 'dumbbell' },
+                ],
+                assist: [
+                    { name: '雙槓撐體', sets: '3', reps: '8-15', angle: '下胸', equip: 'gym' },
+                    { name: '機械胸推', sets: '3', reps: '10-15', angle: '水平推', equip: 'gym' },
+                    { name: '伏地挺身', sets: '2-3', reps: '力竭', angle: '水平推', equip: 'bodyweight' },
+                    { name: '啞鈴飛鳥', sets: '3', reps: '10-15', angle: '夾胸', equip: 'dumbbell' },
+                ],
+                isolate: [
+                    { name: '滑輪夾胸', sets: '3', reps: '12-15', angle: '夾胸', equip: 'gym' },
+                    { name: '蝴蝶機夾胸', sets: '3', reps: '12-15', angle: '夾胸', equip: 'gym' },
+                    { name: '啞鈴飛鳥', sets: '3', reps: '10-15', angle: '夾胸', equip: 'dumbbell' },
+                ]
+            },
+            back: {
+                main: [
+                    { name: '引體向上', sets: '4', reps: '6-12', angle: '垂直拉', equip: 'gym' },
+                    { name: '高位下拉', sets: '4', reps: '8-12', angle: '垂直拉', equip: 'gym' },
+                    { name: '槓鈴划船', sets: '4', reps: '6-10', angle: '水平拉', equip: 'gym' },
+                    { name: 'T-Bar划船', sets: '4', reps: '8-12', angle: '水平拉', equip: 'gym' },
+                ],
+                assist: [
+                    { name: '坐姿划船', sets: '3-4', reps: '10-12', angle: '水平拉', equip: 'gym' },
+                    { name: '單臂啞鈴划船', sets: '3', reps: '8-12', angle: '水平拉', equip: 'dumbbell' },
+                    { name: '窄握高位下拉', sets: '3', reps: '10-12', angle: '垂直拉', equip: 'gym' },
+                    { name: '胸托划船', sets: '3', reps: '10-12', angle: '水平拉', equip: 'gym' },
+                ],
+                isolate: [
+                    { name: '面拉', sets: '3', reps: '12-20', angle: '後肩', equip: 'gym' },
+                    { name: '反向飛鳥', sets: '3', reps: '12-15', angle: '後肩', equip: 'dumbbell' },
+                    { name: '單臂滑輪下拉', sets: '3', reps: '12', angle: '垂直拉', equip: 'gym' },
+                ]
+            },
+            shoulder: {
+                main: [
+                    { name: '軍事肩推', sets: '4', reps: '6-10', angle: '前三角', equip: 'gym' },
+                    { name: '啞鈴肩推', sets: '3-4', reps: '8-12', angle: '前三角', equip: 'dumbbell' },
+                    { name: '阿諾肩推', sets: '3', reps: '10-12', angle: '前三角', equip: 'dumbbell' },
+                ],
+                assist: [
+                    { name: '啞鈴側平舉', sets: '4', reps: '12-20', angle: '側三角', equip: 'dumbbell' },
+                    { name: '滑輪側平舉', sets: '3', reps: '12-15', angle: '側三角', equip: 'gym' },
+                    { name: '機械側平舉', sets: '3', reps: '12-15', angle: '側三角', equip: 'gym' },
+                ],
+                isolate: [
+                    { name: '反向飛鳥', sets: '3', reps: '12-15', angle: '後三角', equip: 'dumbbell' },
+                    { name: '面拉', sets: '3', reps: '15-20', angle: '後三角', equip: 'gym' },
+                ]
+            },
+            legs: {
+                main: [
+                    { name: '深蹲', sets: '4', reps: '6-10', angle: '股四頭', equip: 'gym' },
+                    { name: '腿推機', sets: '4', reps: '10-15', angle: '股四頭', equip: 'gym' },
+                    { name: '前蹲', sets: '3-4', reps: '6-10', angle: '股四頭', equip: 'gym' },
+                    { name: '哈克深蹲', sets: '3', reps: '8-12', angle: '股四頭', equip: 'gym' },
+                ],
+                assist: [
+                    { name: '羅馬尼亞硬拉', sets: '4', reps: '8-12', angle: '腿後側', equip: 'gym' },
+                    { name: '臀推', sets: '4', reps: '8-12', angle: '臀腿', equip: 'gym' },
+                    { name: '保加利亞分腿蹲', sets: '3', reps: '8-12', angle: '單腳', equip: 'dumbbell' },
+                    { name: '腿後腱彎舉', sets: '3', reps: '10-15', angle: '腿後側', equip: 'gym' },
+                ],
+                isolate: [
+                    { name: '腿伸展', sets: '3', reps: '12-15', angle: '股四頭', equip: 'gym' },
+                    { name: '早安式', sets: '3', reps: '8-12', angle: '腿後側', equip: 'gym' },
+                    { name: '箱式登階', sets: '3', reps: '10', angle: '單腳', equip: 'bodyweight' },
+                ]
+            },
+            biceps: [
+                { name: '槓鈴彎舉', sets: '3-4', reps: '8-12', equip: 'gym' },
+                { name: 'EZ槓彎舉', sets: '3', reps: '10', equip: 'gym' },
+                { name: '啞鈴交替彎舉', sets: '3', reps: '10-12', equip: 'dumbbell' },
+                { name: '牧師椅彎舉', sets: '3', reps: '10-15', equip: 'gym' },
+                { name: '上斜啞鈴彎舉', sets: '3', reps: '10-12', equip: 'dumbbell' },
+                { name: '滑輪彎舉', sets: '3', reps: '12-15', equip: 'gym' },
+                { name: '槌式彎舉', sets: '3', reps: '10-12', equip: 'dumbbell' },
+            ],
+            triceps: [
+                { name: '窄握臥推', sets: '4', reps: '6-10', equip: 'gym' },
+                { name: '雙槓撐體', sets: '3', reps: '8-12', equip: 'gym' },
+                { name: '滑輪下壓', sets: '3-4', reps: '10-15', equip: 'gym' },
+                { name: '碎顱者', sets: '3-4', reps: '8-12', equip: 'gym' },
+                { name: '頭上啞鈴伸展', sets: '3', reps: '10-12', equip: 'dumbbell' },
+                { name: '單臂繩索伸展', sets: '3', reps: '12-15', equip: 'gym' },
+                { name: '反握下壓', sets: '3', reps: '12-15', equip: 'gym' },
+            ],
+            abs: [
+                { name: '懸垂抬腿', sets: '3', reps: '10-15', equip: 'gym' },
+                { name: '滾輪', sets: '3', reps: '8-12', equip: 'bodyweight' },
+                { name: 'Cable Crunch', sets: '3', reps: '12-15', equip: 'gym' },
+                { name: '平板支撐', sets: '3', reps: '30-60秒', equip: 'bodyweight' },
+                { name: 'Russian Twist', sets: '3', reps: '20', equip: 'bodyweight' },
+            ],
+            calves: [
+                { name: '站姿提踵', sets: '4', reps: '12-15', equip: 'gym' },
+                { name: '坐姿提踵', sets: '3', reps: '15-20', equip: 'gym' },
+            ],
+            forearms: [
+                { name: '手腕彎舉', sets: '3', reps: '12-15', equip: 'dumbbell' },
+                { name: '反向手腕彎舉', sets: '3', reps: '12-15', equip: 'dumbbell' },
+            ]
+        };
+
+        // ==================== 應用狀態 ====================
+        const state = {
+            step: 'start', // start | target | muscle | secondary | time | env | level | confirm | result
+            mainMuscle: null,
+            secondaryMuscle: null,
+            time: null,
+            environment: null,
+            level: null,
+        };
+
+        // ==================== 課表生成引擎 ====================
+        function generatePlan() {
+            const { mainMuscle, secondaryMuscle, time, level } = state;
+            let mainCount, secondaryCount;
+
+            // 根據時間決定動作數量
+            const t = parseInt(time);
+            if (t <= 30) { mainCount = { main: 1, assist: 1, isolate: 1 };
+                secondaryCount = 1; } else if (t <= 60) { mainCount = { main: 1, assist: 2, isolate: 1 };
+                secondaryCount = 2; } else if (t <= 90) { mainCount = { main: 2, assist: 2, isolate: 2 };
+                secondaryCount = 3; } else if (t <= 120) { mainCount = { main: 2, assist: 3, isolate: 2 };
+                secondaryCount = 3; } else { mainCount = { main: 3, assist: 3, isolate: 3 };
+                secondaryCount = 4; }
+
+            // 新手減量
+            if (level === 'beginner') {
+                mainCount.main = Math.max(1, mainCount.main - 1);
+                mainCount.isolate = Math.max(0, mainCount.isolate - 1);
+                secondaryCount = Math.max(1, secondaryCount - 1);
+            }
+
+            const muscleMap = { 'chest': 'chest', 'back': 'back', 'shoulder': 'shoulder', 'legs': 'legs' };
+            const db = exerciseDB[muscleMap[mainMuscle]];
+
+            let mainExercises = [];
+            const usedAngles = [];
+
+            // 主力動作
+            const mainPool = [...db.main];
+            const pickedMain = pickRandom(mainPool, mainCount.main);
+            pickedMain.forEach(e => { mainExercises.push({ ...e, category: '主力' });
+                usedAngles.push(e.angle); });
+
+            // 輔助動作 (避開已用角度)
+            const assistPool = db.assist.filter(e => !usedAngles.includes(e.angle));
+            const pickedAssist = pickRandom(assistPool.length > 0 ? assistPool : db.assist, mainCount.assist);
+            pickedAssist.forEach(e => { mainExercises.push({ ...e, category: '輔助' });
+                usedAngles.push(e.angle); });
+
+            // 孤立動作
+            const isolatePool = db.isolate.filter(e => !usedAngles.includes(e.angle));
+            const pickedIsolate = pickRandom(isolatePool.length > 0 ? isolatePool : db.isolate, mainCount.isolate);
+            pickedIsolate.forEach(e => { mainExercises.push({ ...e, category: '孤立' }); });
+
+            // 副肌群
+            let secondaryExercises = [];
+            if (secondaryMuscle && secondaryMuscle !== 'none') {
+                const secDb = exerciseDB[secondaryMuscle] || [];
+                secondaryExercises = pickRandom(secDb, secondaryCount);
+            }
+
+            return { main: mainExercises, secondary: secondaryExercises, time: t };
+        }
+
+        function pickRandom(arr, count) {
+            const shuffled = [...arr].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, Math.min(count, arr.length));
+        }
+
+        // ==================== 渲染引擎 ====================
+        const app = document.getElementById('appContainer');
+        const spiderSprite = document.getElementById('spiderSprite');
+        const spiderContainer = document.getElementById('spiderContainer');
+
+        function spiderAction(type) {
+            spiderSprite.classList.remove('jump', 'swing');
+            void spiderSprite.offsetWidth;
+            if (type === 'jump') spiderSprite.classList.add('jump');
+            if (type === 'swing') spiderSprite.classList.add('swing');
+            if (type === 'moveLeft') spiderContainer.style.right = '60px';
+            if (type === 'moveRight') spiderContainer.style.right = '30px';
+        }
+
+        function renderStep(step) {
+            state.step = step;
+            let html = '';
+
+            switch (step) {
+                case 'start':
+                    html = `
+                    <div class="title-section">
+                        <span class="spider-icon">🕷️</span>
+                        <div class="title-main">SPIDER TRAINING SYSTEM</div>
+                        <div class="title-sub">你的專屬訓練助手</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <button class="btn btn-large btn-primary" onclick="goTo('target')">
+                            ⚡ 開始訓練
+                        </button>
+                    </div>
+                    <div style="text-align:center;margin-top:20px;font-size:0.7rem;color:#555;letter-spacing:2px;">
+                        v1.0 · 肌肥大模式
+                    </div>
+                  `;
+                    spiderAction('moveRight');
+                    break;
+
+                case 'target':
+                    html = `
+                    <div class="title-section" style="margin-bottom:20px;">
+                        <div style="font-size:0.85rem;color:var(--neon-blue);letter-spacing:3px;">選擇訓練方向</div>
+                    </div>
+                    <div class="card selected" onclick="goTo('muscle')" style="cursor:pointer;">
+                        <div class="card-icon">💪</div>
+                        <div class="card-title">肌肥大</div>
+                        <div class="card-desc">增加肌肉量、雕塑身材</div>
+                    </div>
+                    <div style="text-align:center;margin-top:15px;">
+                        <button class="btn" onclick="goTo('start')" style="font-size:0.75rem;padding:8px 20px;">← 返回</button>
+                    </div>
+                  `;
+                    spiderAction('moveLeft');
+                    break;
+
+                case 'muscle':
+                    const muscles = [
+                        { id: 'chest', icon: '🟥', name: '胸', desc: 'Chest' },
+                        { id: 'back', icon: '🟦', name: '背', desc: 'Back' },
+                        { id: 'shoulder', icon: '🟨', name: '肩', desc: 'Shoulder' },
+                        { id: 'legs', icon: '🟩', name: '腿', desc: 'Legs' },
+                    ];
+                    html = `
+                    <div class="title-section" style="margin-bottom:15px;">
+                        <div style="font-size:0.85rem;color:var(--neon-blue);letter-spacing:3px;">今天想練哪裡？</div>
+                        <div style="font-size:0.7rem;color:#666;">主訓練部位</div>
+                    </div>
+                    <div class="grid-2">
+                        ${muscles.map(m => `
+                        <div class="card" onclick="selectMainMuscle('${m.id}')" id="card-${m.id}">
+                            <div class="card-icon">${m.icon}</div>
+                            <div class="card-title">${m.name}</div>
+                            <div class="card-desc">${m.desc}</div>
+                        </div>
+                        `).join('')}
+                    </div>
+                    <div style="text-align:center;margin-top:15px;">
+                        <button class="btn" onclick="goTo('target')" style="font-size:0.75rem;padding:8px 20px;">← 返回</button>
+                    </div>
+                  `;
+                    spiderAction('swing');
+                    break;
+
+                case 'secondary':
+                    const secondaries = [
+                        { id: 'biceps', icon: '🟪', name: '二頭' },
+                        { id: 'triceps', icon: '🟥', name: '三頭' },
+                        { id: 'abs', icon: '🟫', name: '腹肌' },
+                        { id: 'calves', icon: '⬜', name: '小腿' },
+                        { id: 'forearms', icon: '🔲', name: '前臂' },
+                        { id: 'none', icon: '➖', name: '不需要' },
+                    ];
+                    html = `
+                    <div class="title-section" style="margin-bottom:15px;">
+                        <div style="font-size:0.85rem;color:var(--neon-blue);letter-spacing:3px;">輔助訓練</div>
+                        <div style="font-size:0.7rem;color:#666;">想加強哪個輔助部位？</div>
+                    </div>
+                    <div class="grid-3">
+                        ${secondaries.map(s => `
+                        <div class="card" onclick="selectSecondary('${s.id}')" id="sec-${s.id}">
+                            <div class="card-icon">${s.icon}</div>
+                            <div class="card-title">${s.name}</div>
+                        </div>
+                        `).join('')}
+                    </div>
+                    <div style="text-align:center;margin-top:15px;">
+                        <button class="btn" onclick="goTo('muscle')" style="font-size:0.75rem;padding:8px 20px;">← 返回</button>
+                    </div>
+                  `;
+                    spiderAction('moveRight');
+                    break;
+
+                case 'time':
+                    const times = ['30', '60', '90', '120', '150', '180'];
+                    html = `
+                    <div class="title-section" style="margin-bottom:15px;">
+                        <div style="font-size:0.85rem;color:var(--neon-blue);letter-spacing:3px;">今天有多少時間？</div>
+                    </div>
+                    <div class="time-slider-group">
+                        ${times.map(t => `
+                        <button class="time-chip" onclick="selectTime('${t}')" id="time-${t}">${t} MIN</button>
+                        `).join('')}
+                    </div>
+                    <div style="text-align:center;margin-top:15px;">
+                        <button class="btn" onclick="goTo('secondary')" style="font-size:0.75rem;padding:8px 20px;">← 返回</button>
+                    </div>
+                  `;
+                    spiderAction('jump');
+                    break;
+
+                case 'environment':
+                    const envs = [
+                        { id: 'gym', icon: '🏋️', name: '健身房' },
+                        { id: 'home', icon: '🏠', name: '居家' },
+                        { id: 'limited', icon: '🔧', name: '有限器材' },
+                        { id: 'bodyweight', icon: '🧘', name: '徒手' },
+                    ];
+                    html = `
+                    <div class="title-section" style="margin-bottom:15px;">
+                        <div style="font-size:0.85rem;color:var(--neon-blue);letter-spacing:3px;">訓練環境</div>
+                    </div>
+                    <div class="grid-2">
+                        ${envs.map(e => `
+                        <div class="card" onclick="selectEnv('${e.id}')" id="env-${e.id}">
+                            <div class="card-icon">${e.icon}</div>
+                            <div class="card-title">${e.name}</div>
+                        </div>
+                        `).join('')}
+                    </div>
+                    <div style="text-align:center;margin-top:15px;">
+                        <button class="btn" onclick="goTo('time')" style="font-size:0.75rem;padding:8px 20px;">← 返回</button>
+                    </div>
+                  `;
+                    spiderAction('moveLeft');
+                    break;
+
+                case 'level':
+                    const levels = [
+                        { id: 'beginner', icon: '🌱', name: '新手', desc: '剛開始健身' },
+                        { id: 'intermediate', icon: '🔥', name: '有經驗', desc: '規律訓練中' },
+                        { id: 'advanced', icon: '💎', name: '進階', desc: '追求突破' },
+                    ];
+                    html = `
+                    <div class="title-section" style="margin-bottom:15px;">
+                        <div style="font-size:0.85rem;color:var(--neon-blue);letter-spacing:3px;">訓練經驗</div>
+                    </div>
+                    ${levels.map(l => `
+                    <div class="card" onclick="selectLevel('${l.id}')" id="lvl-${l.id}" style="margin-bottom:10px;">
+                        <div class="card-icon">${l.icon}</div>
+                        <div class="card-title">${l.name}</div>
+                        <div class="card-desc">${l.desc}</div>
+                    </div>
+                    `).join('')}
+                    <div style="text-align:center;margin-top:15px;">
+                        <button class="btn" onclick="goTo('environment')" style="font-size:0.75rem;padding:8px 20px;">← 返回</button>
+                    </div>
+                  `;
+                    spiderAction('swing');
+                    break;
+
+                case 'confirm':
+                    const muscleNames = { chest: '胸', back: '背', shoulder: '肩', legs: '腿' };
+                    const secNames = { biceps: '二頭', triceps: '三頭', abs: '腹肌', calves: '小腿', forearms: '前臂',
+                        none: '無' };
+                    const envNames = { gym: '健身房', home: '居家', limited: '有限器材', bodyweight: '徒手' };
+                    const lvlNames = { beginner: '新手', intermediate: '有經驗', advanced: '進階' };
+                    html = `
+                    <div class="title-section" style="margin-bottom:15px;">
+                        <div style="font-size:0.85rem;color:var(--neon-blue);letter-spacing:3px;">確認訓練設定</div>
+                    </div>
+                    <div class="config-display">
+                        <div class="config-line">目標：<span>肌肥大 💪</span></div>
+                        <div class="config-line">主部位：<span>${muscleNames[state.mainMuscle]}</span></div>
+                        <div class="config-line">輔助：<span>${secNames[state.secondaryMuscle]}</span></div>
+                        <hr class="config-divider">
+                        <div class="config-line">時間：<span>${state.time} 分鐘</span></div>
+                        <div class="config-line">環境：<span>${envNames[state.environment]}</span></div>
+                        <div class="config-line">程度：<span>${lvlNames[state.level]}</span></div>
+                    </div>
+                    <div style="text-align:center;margin-top:20px;">
+                        <button class="btn btn-large btn-primary" onclick="generateAndShow()">
+                            ⚡ 生成訓練
+                        </button>
+                    </div>
+                    <div style="text-align:center;margin-top:10px;">
+                        <button class="btn" onclick="goTo('level')" style="font-size:0.75rem;padding:8px 20px;">← 返回修改</button>
+                    </div>
+                  `;
+                    spiderAction('jump');
+                    break;
+
+                case 'result':
+                    const plan = generatePlan();
+                    const mName = { chest: '胸', back: '背', shoulder: '肩', legs: '腿' } [state.mainMuscle];
+                    const sName = { biceps: '二頭', triceps: '三頭', abs: '腹肌', calves: '小腿', forearms: '前臂',
+                        none: '' } [state.secondaryMuscle];
+                    html = `
+                    <div class="plan-output">
+                        <div class="plan-header">
+                            <div class="plan-title">🕷️ 訓練計畫生成完畢</div>
+                            <div class="plan-meta">${mName}${sName ? ' + ' + sName : ''} · ${state.time}分鐘 · 肌肥大</div>
+                        </div>
+                        <div class="section-label">🔥 ${mName} 訓練</div>
+                        ${plan.main.map((e, i) => `
+                        <div class="exercise-item">
+                            <div class="exercise-number">${i+1}</div>
+                            <div class="exercise-name">${e.name}</div>
+                            <div class="exercise-sets">${e.sets} × ${e.reps}</div>
+                        </div>
+                        `).join('')}
+                        ${plan.secondary.length > 0 ? `
+                        <div class="section-label">💥 ${sName} 訓練</div>
+                        ${plan.secondary.map((e, i) => `
+                        <div class="exercise-item">
+                            <div class="exercise-number">${plan.main.length + i + 1}</div>
+                            <div class="exercise-name">${e.name}</div>
+                            <div class="exercise-sets">${e.sets} × ${e.reps}</div>
+                        </div>
+                        `).join('')}
+                        ` : ''}
+                        <div style="text-align:center;margin-top:20px;font-size:0.7rem;color:#555;letter-spacing:2px;">
+                            組間休息 60-90 秒 · 控制離心 · 漸進式超負荷
+                        </div>
+                    </div>
+                    <div style="text-align:center;margin-top:15px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="generateAndShow()">🔄 重新生成</button>
+                        <button class="btn" onclick="resetAll()">🏠 回首頁</button>
+                    </div>
+                  `;
+                    sound.complete();
+                    spiderAction('jump');
+                    break;
+            }
+
+            app.innerHTML = html;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const steps = ['start', 'target', 'muscle', 'secondary', 'time', 'environment', 'level', 'confirm', 'result'];
+            const idx = steps.indexOf(state.step);
+            const total = steps.length - 1;
+            const pct = Math.round((idx / total) * 100);
+            const existingBar = document.querySelector('.progress-bar');
+            if (existingBar && state.step !== 'start' && state.step !== 'result') {
+                existingBar.querySelector('.progress-fill').style.width = pct + '%';
+            }
+            if (!existingBar && state.step !== 'start' && state.step !== 'result') {
+                const bar = document.createElement('div');
+                bar.className = 'progress-bar';
+                bar.innerHTML = `<div class="progress-fill" style="width:${pct}%"></div>`;
+                app.prepend(bar);
+            }
+            if (state.step === 'start' || state.step === 'result') {
+                const bar = document.querySelector('.progress-bar');
+                if (bar) bar.remove();
+            }
+        }
+
+        // ==================== 互動處理 ====================
+        function goTo(step) {
+            sound.click();
+            renderStep(step);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectMainMuscle(muscle) {
+            sound.select();
+            state.mainMuscle = muscle;
+            document.querySelectorAll('#card-chest, #card-back, #card-shoulder, #card-legs').forEach(el => el.classList
+                .remove('selected'));
+            const card = document.getElementById('card-' + muscle);
+            if (card) card.classList.add('selected');
+            setTimeout(() => goTo('secondary'), 250);
+        }
+
+        function selectSecondary(sec) {
+            sound.select();
+            state.secondaryMuscle = sec;
+            document.querySelectorAll('[id^="sec-"]').forEach(el => el.classList.remove('selected'));
+            const card = document.getElementById('sec-' + sec);
+            if (card) card.classList.add('selected');
+            setTimeout(() => goTo('time'), 250);
+        }
+
+        function selectTime(time) {
+            sound.select();
+            state.time = time;
+            document.querySelectorAll('.time-chip').forEach(el => el.classList.remove('selected'));
+            const chip = document.getElementById('time-' + time);
+            if (chip) chip.classList.add('selected');
+            setTimeout(() => goTo('environment'), 250);
+        }
+
+        function selectEnv(env) {
+            sound.select();
+            state.environment = env;
+            document.querySelectorAll('[id^="env-"]').forEach(el => el.classList.remove('selected'));
+            const card = document.getElementById('env-' + env);
+            if (card) card.classList.add('selected');
+            setTimeout(() => goTo('level'), 250);
+        }
+
+        function selectLevel(level) {
+            sound.select();
+            state.level = level;
+            document.querySelectorAll('[id^="lvl-"]').forEach(el => el.classList.remove('selected'));
+            const card = document.getElementById('lvl-' + level);
+            if (card) card.classList.add('selected');
+            setTimeout(() => goTo('confirm'), 250);
+        }
+
+        function generateAndShow() {
+            sound.scan();
+            // 短暫掃描動畫
+            app.innerHTML = `
+                <div class="title-section">
+                    <span class="spider-icon">🕷️</span>
+                    <div style="font-size:1.5rem;color:var(--accent-glow);letter-spacing:4px;">SCAN START</div>
+                    <div style="font-size:1rem;color:var(--neon-blue);margin-top:10px;letter-spacing:2px;">
+                        ██████████ <span id="scanPct">0</span>%
+                    </div>
+                    <div style="font-size:0.7rem;color:#555;margin-top:8px;">LOADING...</div>
+                </div>
+            `;
+            spiderAction('swing');
+            let pct = 0;
+            const interval = setInterval(() => {
+                pct += Math.floor(Math.random() * 25) + 5;
+                if (pct >= 100) {
+                    pct = 100;
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        state.step = 'result';
+                        renderStep('result');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 300);
+                }
+                const el = document.getElementById('scanPct');
+                if (el) el.textContent = pct;
+            }, 120);
+        }
+
+        function resetAll() {
+            sound.click();
+            state.mainMuscle = null;
+            state.secondaryMuscle = null;
+            state.time = null;
+            state.environment = null;
+            state.level = null;
+            state.step = 'start';
+            renderStep('start');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            spiderContainer.style.right = '30px';
+        }
+
+        // ==================== 粒子系統 ====================
+        function createParticles() {
+            const container = document.getElementById('particlesContainer');
+            const colors = ['#7b2fff', '#9b4fff', '#00d4ff', '#ff2d78', '#23d160'];
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.width = (Math.random() * 3 + 1) + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.animationDuration = (Math.random() * 10 + 8) + 's';
+                particle.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // ==================== 初始化 ====================
+        function init() {
+            createParticles();
+            renderStep('start');
+            // 點擊頁面任意處初始化音效
+            document.addEventListener('click', () => {
+                sound.init();
+            }, { once: true });
+        }
+
+        init();
+    </script>
+</body>
+</html>
